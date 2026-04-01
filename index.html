@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SP MD BOT — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root {
+    --bg: #080c14;
+    --bg2: #0d1520;
+    --bg3: #111d2e;
+    --card: #0e1a28;
+    --border: #1a3050;
+    --accent: #00e5ff;
+    --accent2: #ff3d71;
+    --accent3: #00ff94;
+    --accent4: #ffb300;
+    --text: #c8dae8;
+    --text2: #5e7a94;
+    --glow: 0 0 20px rgba(0,229,255,0.15);
+    --glow2: 0 0 20px rgba(255,61,113,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 2; }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky;
+    top: 0;
+    background: rgba(8,12,20,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo-icon {
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: var(--glow);
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,229,255,0.2); }
+    50% { box-shadow: 0 0 25px rgba(0,229,255,0.5); }
+  }
+
+  .logo-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(0,229,255,0.5);
+  }
+
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    background: var(--bg2);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    transition: background 0.3s;
+  }
+
+  .status-dot.online { background: var(--accent3); box-shadow: 0 0 10px var(--accent3); animation: blink 1.5s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ── Sections ── */
+  main { padding: 30px 0; }
+
+  section { margin-bottom: 30px; }
+
+  .section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.4;
+  }
+
+  .card:hover { border-color: rgba(0,229,255,0.3); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ── Inputs ── */
+  .field { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .btn-primary:hover { background: #33ecff; box-shadow: 0 0 20px rgba(0,229,255,0.4); transform: translateY(-1px); }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+  }
+  .btn-danger:hover { background: var(--accent2); color: #fff; box-shadow: 0 0 20px rgba(255,61,113,0.3); }
+
+  .btn-success {
+    background: transparent;
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+  }
+  .btn-success:hover { background: var(--accent3); color: #000; }
+
+  .btn-warning {
+    background: transparent;
+    border: 1px solid var(--accent4);
+    color: var(--accent4);
+  }
+  .btn-warning:hover { background: var(--accent4); color: #000; }
+
+  /* ── Toggle Switch ── */
+  .toggle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+
+  .toggle-item:hover { border-color: rgba(0,229,255,0.3); background: var(--bg3); }
+
+  .toggle-info { flex: 1; }
+
+  .toggle-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  .toggle-desc {
+    font-size: 11px;
+    color: var(--text2);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .toggle-icon {
+    font-size: 18px;
+    margin-right: 12px;
+    width: 28px;
+    text-align: center;
+  }
+
+  /* Custom toggle */
+  .switch {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .slider {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .slider::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text2);
+    transition: 0.3s;
+  }
+
+  input:checked + .slider {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(0,229,255,0.2);
+  }
+
+  input:checked + .slider::before {
+    transform: translateX(22px);
+    background: var(--accent);
+  }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 12px;
+    display: none;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .alert-success { background: rgba(0,255,148,0.08); border: 1px solid rgba(0,255,148,0.3); color: var(--accent3); }
+  .alert-error { background: rgba(255,61,113,0.08); border: 1px solid rgba(255,61,113,0.3); color: var(--accent2); }
+  .alert.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
+  /* ── Stats ── */
+  .stat-row { display: flex; gap: 16px; margin-bottom: 16px; }
+
+  .stat-box {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,229,255,0.4);
+    font-weight: 700;
+  }
+
+  .stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* ── Log ── */
+  .log-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    height: 180px;
+    overflow-y: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.8;
+  }
+
+  .log-box::-webkit-scrollbar { width: 4px; }
+  .log-box::-webkit-scrollbar-track { background: var(--bg); }
+  .log-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .log-entry { margin-bottom: 4px; }
+  .log-entry.mod { color: var(--accent2); }
+  .log-entry.ok { color: var(--accent3); }
+  .log-entry.info { color: var(--accent); }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .stat-row { flex-wrap: wrap; }
+    .header-inner { flex-wrap: wrap; gap: 12px; }
+  }
+
+  /* ── Animations ── */
+  @keyframes glow-pulse {
+    0%,100% { box-shadow: 0 0 20px rgba(0,229,255,0.2); }
+    50%      { box-shadow: 0 0 40px rgba(0,229,255,0.5); border-color: #33ecff; }
+  }
+
+  .card, .toggle-item { animation: slideUp 0.4s ease both; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+  }
+  .tag-new { background: rgba(0,229,255,0.12); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+  .tag-hot { background: rgba(255,61,113,0.12); color: var(--accent2); border: 1px solid rgba(255,61,113,0.3); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <div>
+          <div class="logo-text">SP MD BOT</div>
+          <div class="logo-sub">Admin Dashboard</div>
+        </div>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" style="font-family:'Space Mono',monospace;font-size:12px;">OFFLINE</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="container">
+
+  <!-- ── LOGIN SECTION ─────────────────────────────────────── -->
+  <div id="loginSection" style="margin-bottom:28px;">
+    <div class="section-title">🔐 WhatsApp Login</div>
+
+    <!-- State A: Waiting for phone (bot offline, not paired) -->
+    <div id="loginWaiting" class="card" style="border-color:rgba(255,179,0,0.4);background:rgba(255,179,0,0.04);">
+      <div style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;">
+        <div style="font-size:36px;line-height:1;">📱</div>
+        <div style="flex:1;min-width:220px;">
+          <div style="font-weight:700;font-size:17px;color:var(--accent4);margin-bottom:6px;">Connect WhatsApp</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">
+            Enter your WhatsApp number. An 8-digit pairing code will appear below — enter it in WhatsApp to link the bot.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <input type="text" id="pairPhoneInput" placeholder="94771234567" maxlength="15"
+              style="width:180px;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:2px;"
+              onkeydown="if(event.key==='Enter') requestPair()">
+            <button class="btn btn-warning" onclick="requestPair()" id="pairBtn">
+              Generate Code
+            </button>
+          </div>
+          <div id="pairMsg" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);margin-top:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- State B: Code generated, waiting for user to enter in WA -->
+    <div id="loginCode" class="card" style="display:none;border-color:rgba(0,229,255,0.5);background:rgba(0,229,255,0.04);">
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+        <div style="font-size:36px;line-height:1;">🔑</div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:15px;color:var(--accent);margin-bottom:10px;">
+            Enter this code in WhatsApp
+          </div>
+          <!-- Big code display -->
+          <div id="pairingCodeDisplay" style="
+            font-family:'Space Mono',monospace;
+            font-size:34px;
+            font-weight:700;
+            letter-spacing:10px;
+            color:#fff;
+            background:rgba(0,0,0,0.4);
+            display:inline-block;
+            padding:12px 28px;
+            border-radius:10px;
+            border:2px solid var(--accent);
+            box-shadow:0 0 30px rgba(0,229,255,0.2);
+            margin-bottom:14px;
+            animation: glow-pulse 1.5s ease-in-out infinite;
+          ">---- ----</div>
+          <br>
+          <div style="font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;line-height:2;">
+            WhatsApp &rarr; ⋮ Menu &rarr; <b style="color:var(--text)">Linked Devices</b><br>
+            &rarr; <b style="color:var(--text)">Link a Device</b> &rarr; <b style="color:var(--text)">Link with phone number</b><br>
+            &rarr; Enter the code above
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-danger" onclick="cancelPair()" style="font-size:11px;">✕ Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- State C: Connected -->
+    <div id="loginConnected" class="card" style="display:none;border-color:rgba(0,255,148,0.4);background:rgba(0,255,148,0.04);">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:30px;">✅</div>
+        <div>
+          <div style="font-weight:700;font-size:16px;color:var(--accent3);">Bot Connected</div>
+          <div id="connectedAs" style="font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);margin-top:4px;"></div>
+        </div>
+        <div style="margin-left:auto;">
+          <button class="btn btn-danger" onclick="logoutBot()" style="font-size:11px;">🔌 Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <section>
+    <div class="section-title">📊 Live Stats</div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" id="statStrikes">—</div>
+        <div class="stat-label">Struck Users</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statVanish">—</div>
+        <div class="stat-label">Vanish Queue</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statGroups">—</div>
+        <div class="stat-label">Active Groups</div>
+      </div>
+    </div>
+    <div class="log-box" id="logBox">
+      <div class="log-entry info">[BOOT] SP MD BOT dashboard initialized...</div>
+    </div>
+  </section>
+
+  <!-- Config -->
+  <section>
+    <div class="section-title">⚙️ Configuration</div>
+    <div class="card">
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <label>Gemini API Key</label>
+            <input type="text" id="geminiKey" placeholder="AIza..." autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Admin Phone Number</label>
+            <input type="text" id="adminNumber" placeholder="94771234567">
+          </div>
+        </div>
+        <div>
+          <div class="field">
+            <label>Landing Page URL</label>
+            <input type="text" id="landingUrl" placeholder="https://your-site.com">
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label>Silent Hours Start (24h)</label>
+              <input type="text" id="silentStart" placeholder="23">
+            </div>
+            <div class="field">
+              <label>Silent Hours End (24h)</label>
+              <input type="text" id="silentEnd" placeholder="6">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <button class="btn btn-primary" onclick="saveConfig()">💾 Save Config</button>
+        <div id="configAlert" class="alert alert-success">✓ Config saved!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Advice -->
+  <section>
+    <div class="section-title">🧠 Bot Advice (Brain Instructions)</div>
+    <div class="card">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">This text shapes the bot's personality and behavior. Update to change how it responds in conversations.</p>
+      <div class="field">
+        <label>Current Advice</label>
+        <textarea id="adviceText" rows="4"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="saveAdvice()">🧠 Update Advice</button>
+        <span id="adviceUpdated" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);"></span>
+        <div id="adviceAlert" class="alert alert-success">✓ Advice updated!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="section-title">⚡ 16 Feature Pillars</div>
+    <div class="toggle-grid" id="toggleGrid">
+      <!-- Generated by JS -->
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-success" onclick="setAllFeatures(true)">✅ Enable All</button>
+      <button class="btn btn-danger" onclick="setAllFeatures(false)">⛔ Disable All</button>
+      <button class="btn btn-primary" onclick="saveConfig()">💾 Save Features</button>
+    </div>
+  </section>
+
+  <!-- Actions -->
+  <section>
+    <div class="section-title">🚀 Quick Actions</div>
+    <div class="grid-3">
+      <div class="card" style="text-align:center;padding:20px;">
+        <div style="font-size:30px;margin-bottom:10px;">✅</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">Batch Approve</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Approve all pending group join requests at once</div>
+        <button class="btn btn-success" onclick="batchApprove()" style="width:100%">Run Approval</button>
+        <div id="approveResult" style="font-size:11px;color:var(--text2);margin-top:10px;font-family:'Space Mono',monospace;"></div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px;">
+        <div style="font-size:30px;margin-bottom:10px;">📊</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">Refresh Stats</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">Reload live stats and activity data</div>
+        <button class="btn btn-primary" onclick="loadStats()" style="width:100%">Refresh</button>
+      </div>
+      <div class="card" style="text-align:center;padding:20px;">
+        <div style="font-size:30px;margin-bottom:10px;">🔗</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:6px;">Commands</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;text-align:left;line-height:1.8;font-family:'Space Mono',monospace;">
+          .ai [question]<br>
+          .draw [prompt]<br>
+          .request [text]<br>
+          .check [url]<br>
+          .sticker<br>
+          .ytmp3/ytmp4 [url]
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<script>
+const socket = io();
+let config = {};
+
+const FEATURES = [
+  { key: 'imageModeration',   icon: '🔞', name: 'AI Image Moderation',    desc: 'Gemini Vision detects & deletes explicit images' },
+  { key: 'linkBan',           icon: '🔗', name: 'Zero-Tolerance Link Ban', desc: 'Auto-delete links from non-admins + kick on strike' },
+  { key: 'batchApproval',     icon: '✅', name: 'Batch Auto-Approval',     desc: 'Approve all pending join requests at once' },
+  { key: 'antiCall',          icon: '📵', name: 'Anti-Call Protection',    desc: 'Auto-reject voice/video calls in group' },
+  { key: 'smartMarketing',    icon: '📣', name: 'Smart Marketing',         desc: 'Post landing page during high-activity hours' },
+  { key: 'antiForeign',       icon: '🌏', name: 'Anti-Foreign Number',     desc: 'Kick non-Sri Lankan (+94) spammers', badge: 'off' },
+  { key: 'strikeSystem',      icon: '⚠️', name: '3-Strike Warning',        desc: 'Track warns → auto-kick on 3rd strike' },
+  { key: 'autoVanish',        icon: '💨', name: 'Auto-Vanish',             desc: "Bot messages self-delete after 30 minutes" },
+  { key: 'ytDownloader',      icon: '▶️', name: 'YouTube Downloader',      desc: 'Download MP3/MP4 via .ytmp3 / .ytmp4' },
+  { key: 'requestSystem',     icon: '📩', name: 'Request System',          desc: '.request command logs DM to admin' },
+  { key: 'silentHours',       icon: '🌙', name: 'Silent Hours',            desc: 'Auto-lock group during scheduled night hours' },
+  { key: 'videoSticker',      icon: '🎞️', name: 'Video to Sticker',        desc: 'Convert video/image to animated sticker' },
+  { key: 'autoTranslate',     icon: '🌐', name: 'Auto-Translate',          desc: 'Gemini translates foreign messages to Sinhala' },
+  { key: 'fakeNewsDetector',  icon: '📰', name: 'Fake News Detector',      desc: 'Gemini flags suspicious links & claims' },
+  { key: 'activityTracker',   icon: '📈', name: 'Activity Tracker',        desc: 'Log activity + weekly admin summary report' },
+  { key: 'imageGeneration',   icon: '🎨', name: 'AI Image Generation',     desc: '.draw [prompt] creates AI images' },
+];
+
+function buildToggles() {
+  const grid = document.getElementById('toggleGrid');
+  grid.innerHTML = FEATURES.map(f => `
+    <div class="toggle-item" onclick="toggleFeature('${f.key}')">
+      <span class="toggle-icon">${f.icon}</span>
+      <div class="toggle-info">
+        <div class="toggle-name">${f.name}</div>
+        <div class="toggle-desc">${f.desc}</div>
+      </div>
+      <label class="switch" onclick="event.stopPropagation()">
+        <input type="checkbox" id="toggle_${f.key}" onchange="saveConfig()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+function toggleFeature(key) {
+  const el = document.getElementById(`toggle_${key}`);
+  if (el) { el.checked = !el.checked; saveConfig(); }
+}
+
+function setAllFeatures(val) {
+  FEATURES.forEach(f => {
+    const el = document.getElementById(`toggle_${f.key}`);
+    if (el) el.checked = val;
+  });
+  saveConfig();
+}
+
+function applyConfig(cfg) {
+  config = cfg;
+  document.getElementById('geminiKey').value = cfg.GEMINI_API_KEY || '';
+  document.getElementById('adminNumber').value = cfg.ADMIN_NUMBER || '';
+  document.getElementById('landingUrl').value = cfg.LANDING_PAGE_URL || '';
+  document.getElementById('silentStart').value = cfg.silentHoursStart ?? 23;
+  document.getElementById('silentEnd').value = cfg.silentHoursEnd ?? 6;
+  FEATURES.forEach(f => {
+    const el = document.getElementById(`toggle_${f.key}`);
+    if (el) el.checked = !!(cfg.features && cfg.features[f.key]);
+  });
+}
+
+async function loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const cfg = await r.json();
+    applyConfig(cfg);
+  } catch(e) { addLog('error', 'Failed to load config'); }
+}
+
+async function saveConfig() {
+  const features = {};
+  FEATURES.forEach(f => {
+    const el = document.getElementById(`toggle_${f.key}`);
+    features[f.key] = el ? el.checked : false;
+  });
+
+  const body = {
+    GEMINI_API_KEY: document.getElementById('geminiKey').value.trim(),
+    ADMIN_NUMBER: document.getElementById('adminNumber').value.trim(),
+    LANDING_PAGE_URL: document.getElementById('landingUrl').value.trim(),
+    silentHoursStart: parseInt(document.getElementById('silentStart').value) || 23,
+    silentHoursEnd: parseInt(document.getElementById('silentEnd').value) || 6,
+    features
+  };
+
+  try {
+    await fetch('/api/config', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    showAlert('configAlert');
+    addLog('ok', 'Config saved successfully');
+  } catch(e) { addLog('error', 'Failed to save config'); }
+}
+
+async function saveAdvice() {
+  const text = document.getElementById('adviceText').value.trim();
+  if (!text) return;
+  try {
+    await fetch('/api/advice', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({advice: text}) });
+    showAlert('adviceAlert');
+    addLog('ok', 'Bot advice updated');
+    document.getElementById('adviceUpdated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch(e) { addLog('error', 'Failed to save advice'); }
+}
+
+async function loadAdvice() {
+  try {
+    const r = await fetch('/api/advice');
+    const data = await r.json();
+    document.getElementById('adviceText').value = data.advice || '';
+    if (data.lastUpdated) {
+      document.getElementById('adviceUpdated').textContent = 'Last: ' + new Date(data.lastUpdated).toLocaleDateString();
+    }
+  } catch(e) {}
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const data = await r.json();
+    document.getElementById('statStrikes').textContent = Object.keys(data.strikes || {}).length;
+    document.getElementById('statVanish').textContent = data.vanishQueueSize || 0;
+    const weeks = Object.keys(data.activity || {});
+    const latestWeek = weeks[weeks.length - 1];
+    const groups = latestWeek ? Object.keys(data.activity[latestWeek]).length : 0;
+    document.getElementById('statGroups').textContent = groups;
+  } catch(e) {}
+}
+
+async function batchApprove() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '⏳ Processing...';
+  try {
+    const r = await fetch('/api/batch-approve', { method:'POST' });
+    const data = await r.json();
+    document.getElementById('approveResult').textContent = data.message || (data.success ? 'Done!' : 'Failed');
+    addLog(data.success ? 'ok' : 'error', data.message);
+  } catch(e) {
+    document.getElementById('approveResult').textContent = 'Error connecting to bot';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Run Approval';
+}
+
+function showAlert(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function addLog(type, msg) {
+  const box = document.getElementById('logBox');
+  const now = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = `log-entry ${type}`;
+  div.textContent = `[${now}] ${msg}`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── Login State Machine ───────────────────────────────────────
+// States: 'offline' | 'pairing' | 'connected'
+let loginState = 'offline';
+let pollTimer  = null;
+
+function setLoginState(state, data = {}) {
+  loginState = state;
+  document.getElementById('loginWaiting'  ).style.display = state === 'offline'   ? 'block' : 'none';
+  document.getElementById('loginCode'     ).style.display = state === 'pairing'   ? 'block' : 'none';
+  document.getElementById('loginConnected').style.display = state === 'connected' ? 'block' : 'none';
+
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+
+  if (state === 'connected') {
+    dot.classList.add('online');
+    text.textContent = data.number ? `ONLINE · +${data.number}` : 'ONLINE';
+    document.getElementById('connectedAs').textContent = `Connected as +${data.number || ''}`;
+    stopPoll();
+  } else if (state === 'pairing') {
+    dot.classList.remove('online');
+    text.textContent = 'PAIRING…';
+    if (data.code) {
+      document.getElementById('pairingCodeDisplay').textContent = data.code;
+    }
+  } else {
+    dot.classList.remove('online');
+    text.textContent = 'OFFLINE';
+  }
+}
+
+async function requestPair() {
+  const phone = document.getElementById('pairPhoneInput').value.replace(/\D/g,'');
+  const msg   = document.getElementById('pairMsg');
+  const btn   = document.getElementById('pairBtn');
+
+  if (!phone || phone.length < 7) {
+    msg.style.color = 'var(--accent2)';
+    msg.textContent = '❌ Phone number is too short. Include country code (e.g. 94771234567)';
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = '⏳ Requesting…';
+  msg.style.color = 'var(--text2)';
+  msg.textContent = 'Connecting to WhatsApp servers…';
+
+  try {
+    const r    = await fetch('/api/pair', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify({ phone })
+    });
+    const data = await r.json();
+
+    if (data.success) {
+      msg.textContent = '✅ Request sent — waiting for code…';
+      setLoginState('pairing', {});
+      startPoll(); // poll /api/pair-status every 2 s
+      addLog('info', `Pairing started for +${phone}`);
+    } else {
+      msg.style.color = 'var(--accent2)';
+      msg.textContent = '❌ ' + (data.message || 'Failed');
+      addLog('error', data.message);
+    }
+  } catch(e) {
+    msg.style.color = 'var(--accent2)';
+    msg.textContent = '❌ Could not reach server';
+  }
+
+  btn.disabled    = false;
+  btn.textContent = 'Generate Code';
+}
+
+function cancelPair() {
+  stopPoll();
+  setLoginState('offline');
+  addLog('info', 'Pairing cancelled');
+}
+
+async function logoutBot() {
+  if (!confirm('Disconnect the bot and clear session?')) return;
+  try {
+    await fetch('/api/pair', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone: '__logout__' }) });
+  } catch(e) {}
+  setLoginState('offline');
+  addLog('info', 'Bot logged out');
+}
+
+function startPoll() {
+  stopPoll();
+  pollTimer = setInterval(async () => {
+    try {
+      const r    = await fetch('/api/pair-status');
+      const data = await r.json();
+      if (data.connected) {
+        setLoginState('connected', { number: data.phone });
+        addLog('ok', `Bot connected as +${data.phone}`);
+      } else if (data.pairingCode) {
+        document.getElementById('pairingCodeDisplay').textContent = data.pairingCode;
+        if (loginState !== 'pairing') setLoginState('pairing', { code: data.pairingCode });
+      }
+    } catch(e) {}
+  }, 2000);
+}
+
+function stopPoll() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+// ── Socket.IO realtime events ─────────────────────────────────
+socket.on('pairing_code', ({ code, phone }) => {
+  setLoginState('pairing', { code });
+  addLog('info', `Pairing code ready for +${phone}: ${code}`);
+});
+
+socket.on('pairing_error', ({ message }) => {
+  setLoginState('offline');
+  stopPoll();
+  addLog('error', 'Pairing failed: ' + message);
+  document.getElementById('pairMsg').textContent = '❌ ' + message;
+  document.getElementById('pairMsg').style.color = 'var(--accent2)';
+});
+
+socket.on('bot_status', ({ connected, number, waitingForPhone }) => {
+  if (connected) {
+    setLoginState('connected', { number });
+    addLog('ok', `Bot online · +${number}`);
+  } else if (waitingForPhone) {
+    setLoginState('offline');
+    addLog('info', 'Bot waiting for phone number from dashboard');
+  } else {
+    if (loginState === 'connected') {
+      setLoginState('offline');
+      addLog('error', 'Bot disconnected');
+    }
+  }
+});
+
+socket.on('config_updated', (cfg)  => { applyConfig(cfg); addLog('info', 'Config synced'); });
+socket.on('advice_updated', ()     => { loadAdvice(); addLog('ok', 'Advice updated via WhatsApp'); });
+socket.on('moderation_event', (ev) => { addLog('mod', `[MOD] ${ev.type} — ${ev.sender?.split('@')[0]}`); });
+
+// ── Boot ──────────────────────────────────────────────────────
+buildToggles();
+loadConfig();
+loadAdvice();
+loadStats();
+setInterval(loadStats, 30000);
+
+// Check if already connected on page load
+(async () => {
+  try {
+    const r    = await fetch('/api/pair-status');
+    const data = await r.json();
+    if (data.connected) {
+      setLoginState('connected', { number: data.phone });
+    } else if (data.pairingCode) {
+      setLoginState('pairing', { code: data.pairingCode });
+      startPoll();
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
